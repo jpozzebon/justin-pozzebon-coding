@@ -1,0 +1,94 @@
+using UnityEngine;
+using System.Collections;
+
+public class DefenseAI : MonoBehaviour
+{
+    [Header("Target Information")]
+    private Transform _target;
+    [Range(0f,10f)]
+    public float _range = 5f;
+    public float _targetCheckTime = 0.5f;
+    public string _enemyTag = "Enemy";
+    [Header("Rotation Information")]
+    public Transform _partToRotate;
+    [Range(0f,10f)]
+    public float _turnSpeed = 5f;
+    [Header("Shooting Mechanics")]
+    [Range(0f, 5f)]
+    public float _fireRate = 1f;
+    [Range(0f, 5f)]
+    private float _fireCountdown = 0f;
+    public GameObject _bulletPrefab;
+    public Transform _bulletSpawn;
+
+	// Use this for initialization
+	void Start ()
+    {
+        InvokeRepeating("UpdateTarget", 0f, _targetCheckTime);
+	}
+	
+	// Update is called once per frame
+	void Update ()
+    {
+	    if(_target == null)
+        {
+            return;
+        }
+
+        Vector3 _dir = _target.position - transform.position;
+        Quaternion _lookRotation = Quaternion.LookRotation(_dir);
+        Vector3 _rotation = Quaternion.Lerp(_partToRotate.rotation, _lookRotation, Time.deltaTime * _turnSpeed).eulerAngles;
+        _partToRotate.rotation = Quaternion.Euler(0f, _rotation.y, 0f);
+
+        if (_fireCountdown <=0)
+        {
+            Shoot();
+            _fireCountdown = 1f / _fireRate;
+        }
+
+        _fireCountdown -= Time.deltaTime;
+	}
+
+    void UpdateTarget ()
+    {
+        GameObject[] _enemies = GameObject.FindGameObjectsWithTag(_enemyTag);
+        float _shortestDistance = Mathf.Infinity;
+        GameObject _nearestEnemy = null;
+
+        foreach (GameObject _enemy in _enemies)
+        {
+            float _distanceToEnemy = Vector3.Distance(transform.position, _enemy.transform.position);
+            if (_distanceToEnemy < _shortestDistance)
+            {
+                _shortestDistance = _distanceToEnemy;
+                _nearestEnemy = _enemy;
+            }
+        }
+
+        if (_nearestEnemy != null && _shortestDistance <= _range)
+        {
+            _target = _nearestEnemy.transform;
+        }
+        else
+        {
+            _target = null;
+        }
+    }
+
+    void Shoot()
+    {
+        GameObject _bulletGo = (GameObject) Instantiate(_bulletPrefab, _bulletSpawn.position, _bulletSpawn.rotation);
+        BulletScript _bullet = _bulletGo.GetComponent<BulletScript>();
+
+        if (_bullet != null)
+        {
+            _bullet.Seek(_target);
+        }
+    }
+
+    void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, _range);
+    }
+}
