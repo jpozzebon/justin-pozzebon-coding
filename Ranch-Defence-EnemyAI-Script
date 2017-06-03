@@ -1,0 +1,94 @@
+using UnityEngine;
+using System.Collections;
+
+public class EnemyAI : MonoBehaviour
+{
+    [Header("Enemy Walk Speed")]
+    [Range(1f,5f)]
+    public float _speed = 1f;
+    [Header("Enemy Information")]
+    public int _health = 100;
+    public int _moneyGain = 50;
+    public GameObject _deathEffect;
+    [Header("Enemy Rotation Information")]
+    public Transform _partToRotate;
+    public float _turnSpeed;
+    [Header("Enemy Waypoint Info")]
+    [Range(0f, 1f)]
+    public float _distanceToWaypoint = 0.2f;
+    private Transform _target;
+    private int _wavepointIndex = 0;
+
+	void Start ()
+    {
+        _target = Waypoints._waypoints[0];
+	}
+	
+	void Update ()
+    { 
+        Vector3 _direction = _target.position - transform.position;
+        transform.Translate(_direction.normalized * _speed * Time.deltaTime, Space.World);
+
+        if (Vector3.Distance(transform.position, _target.position) <= _distanceToWaypoint)
+        {
+            //RotateIntoMoveDirection();
+            GetNextWaypoint();
+        }
+        
+    }
+
+    public void TakeDamage(int amount) 
+    {
+        _health -= amount;
+
+        if (_health <= 0)
+        {
+            KillEnemy();
+        }
+    }
+
+    void KillEnemy() 
+    {
+        PlayerStats._money += _moneyGain;
+        GameObject _effect = (GameObject)Instantiate(_deathEffect, transform.position, Quaternion.identity);
+        Destroy(_effect, 5f);
+        Destroy(gameObject);
+    }
+
+    void GetNextWaypoint()
+    {
+        if (_wavepointIndex >= Waypoints._waypoints.Length - 1)
+        {
+            EndPath();
+            return;
+        }
+
+        _wavepointIndex++;
+        _target = Waypoints._waypoints[_wavepointIndex];
+    }
+
+    void EndPath() 
+    {
+        PlayerStats._lives--;
+        Destroy(gameObject);
+    }
+
+    /*
+    private void RotateIntoMoveDirection() 
+    {
+        //1
+        Vector3 newStartPosition = Waypoints._waypoints[_wavepointIndex].transform.position;
+        Vector3 newEndPosition = Waypoints._waypoints[_wavepointIndex + 1].transform.position;
+        Vector3 newDirection = (newEndPosition - newStartPosition);
+        //2
+        float x = newDirection.x;
+        float y = newDirection.y;
+        float rotationAngle = Mathf.Atan2(y, x) * 180 / Mathf.PI;
+        //3
+        GameObject sprite = (GameObject)
+            gameObject.transform.FindChild("PartToRotate").gameObject;
+        sprite.transform.rotation =
+            Quaternion.AngleAxis(rotationAngle, Vector3.left);
+    }
+    */
+}
