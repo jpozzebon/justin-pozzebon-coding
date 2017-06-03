@@ -100,3 +100,4 @@ public class PauseManager : MonoBehaviour
         _returnToMenuPanel.SetActive(false);
     }
 }
+ 
